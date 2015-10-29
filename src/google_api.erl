@@ -47,10 +47,10 @@ upload(Body,RFname,Parent,Client) when is_binary(Body) ->
 %% Make dir
 
 %% Make dir low level functions
-mk_dir(Folder,Parent,Client) when is_list(Folder) ->
-	mk_dir(list_to_binary(Folder),Parent,Client);	
+make_dir(Folder,Parent,Client) when is_list(Folder) ->
+	make_dir(list_to_binary(Folder),Parent,Client);	
 
-mk_dir(Folder,Parent,Client) when is_binary(Folder)->
+make_dir(Folder,Parent,Client) when is_binary(Folder)->
 	Uri = <<"https://www.googleapis.com/drive/v2/files">>,
 	%% Pass parameters as request's body for POST
 	Params =  [
