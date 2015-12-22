@@ -10,7 +10,7 @@
 
 %% Upload file
 upload(LFname,RFname,Client) ->
-	upload(LFname,RFname,<<"root">>,Client).
+	upload(LFname,RFname,"0",Client).
 
 upload(LFname,RFname,Parent,Client) when is_list(LFname) ->
 	case file:read_file(LFname) of
@@ -19,22 +19,21 @@ upload(LFname,RFname,Parent,Client) when is_list(LFname) ->
 	end;	
 
 upload(Body,RFname,Parent,Client) when is_binary(Body) ->
-	Uri = "https://www.googleapis.com/upload/drive/v2/files",
+	Uri = "https://upload.box.com/api/2.0/files/content",
 	Boundary = "delimiter",
 	Params =  [{"uploadType","multipart"}],
 	Url = restc:construct_url(Uri,Params),
 	MetaData =  [
-				{<<"title">>,RFname}
-				,{<<"parents">>,[[{<<"id">>,Parent}]]}
-				,{<<"mimeType">>,<<"audio/wav">>}
+					{<<"name">>,RFname}
+					,{<<"parent">>,[{<<"id">>,Parent}]}	
 				],
 	MultipartBody = iolist_to_binary(multipart_body(
 			[
 			{"application/json; charset=\"utf-8\"",jsx:encode(MetaData)}
-			,{"application/octet-stream",Body,data}
+			,{"application/octet-stream",RFname,Body,data}
 			],Boundary)),
 	Headers = [{"Content-Length",integer_to_list(size(MultipartBody))}],
-	Type = "multipart/related; boundary=\"" ++ Boundary ++ "\"",
+	Type = "multipart/form-data; boundary=\"" ++ Boundary ++ "\"",
 	case oauth2c:request(post, Type, list_to_binary(Url), [200], Headers, MultipartBody, Client) of
 		{{ok,200,RHeaders,Replay},Client2} -> 
 			% io:format("Headers: ~p~n",[RHeaders]),
@@ -112,13 +111,15 @@ multipart_body([], Boundary) ->
     ["--", Boundary, "--\r\n","\r\n"];
 multipart_body([{Type,Body} | BodyList], Boundary) ->
     ["--", Boundary, "\r\n",
+    "Content-Disposition: form-data; name=\"attributes\"","\r\n",
      "Content-Type: ", Type, "\r\n",
      "MIME-Version: 1.0","\r\n",
      "\r\n",
      Body,"\r\n"
      | multipart_body(BodyList, Boundary)];
-multipart_body([{Type,Body,data} | BodyList], Boundary) ->
+multipart_body([{Type,RFname,Body,data} | BodyList], Boundary) ->
     ["--", Boundary, "\r\n",
+     "Content-Disposition: form-data; name=\"file\"; filename=\"",RFname,"\"\r\n",
      "Content-Type: ", Type, "\r\n",
      "MIME-Version: 1.0","\r\n",
      "Content-Transfer-Encoding: binary","\r\n",
