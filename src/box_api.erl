@@ -1,4 +1,4 @@
--module('google_api').
+-module('box_api').
 
 %% API exports
 %%-export([]).
@@ -72,6 +72,19 @@ account_info(Client) ->
 	case oauth2c:request(get, Uri, [200], Client) of
 		{{ok,200,RHeaders,Replay},Client2} -> {ok,Replay};
 		{{error,Err,_,Replay},_} -> {error,Err,Replay}
+	end.
+
+% Get list
+
+list(Query,Client) when is_list(Query)->
+	Uri = "https://www.googleapis.com/drive/v2/files",
+	Params =  [{"q",Query},{"spaces","drive"}],
+	Url = restc:construct_url(Uri,Params),
+	case oauth2c:request(get,list_to_binary(Url), [200], Client) of
+		{{ok,200,RHeaders,Replay},Client2} -> {ok,Replay};
+		{{error,Err,_,Replay},_} -> {error,Err,Replay};
+		{error,Err,Replay} -> {error,Err,Replay};
+		Req -> Req
 	end.
 
 
