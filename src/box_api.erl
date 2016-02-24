@@ -44,6 +44,32 @@ upload(Body,RFname,Parent,Client) when is_binary(Body)
 		Req -> Req
 	end.
 
+update(Body,RFname,FileId,Client) when is_binary(Body)
+									  ,is_binary(RFname)
+									  ,is_binary(FileId) ->
+	Uri = <<"https://upload.box.com/api/2.0/files/",FileId/binary,"/content">>,
+	Boundary = "delimiter",
+	% MetaData =  [
+	% 				{<<"name">>,RFname}
+	% 				,{<<"parent">>,[{<<"id">>,Parent}]}	
+	% 			],
+	MultipartBody = iolist_to_binary(multipart_body(
+			[
+			% {"application/json; charset=\"utf-8\"",jsx:encode(MetaData)}
+			{"application/octet-stream",RFname,Body,data}
+			],Boundary)),
+	io:format("MultipartBody:~n~p~n",[MultipartBody]),
+	Headers = [{"Content-Length",integer_to_list(size(MultipartBody))}],
+	Type = "multipart/form-data; boundary=\"" ++ Boundary ++ "\"",
+	case oauth2c:request(post, Type, Uri, [201], Headers, MultipartBody, Client) of
+		{{ok,201,RHeaders,Replay},Client2} -> 
+			% io:format("Headers: ~p~n",[RHeaders]),
+			{ok,Replay};
+		{{error,Err,_,Replay},_} -> {error,Err,Replay};
+		{error,Err,Replay} -> {error,Err,Replay};
+		Req -> Req
+	end.	
+
 %% Make dir
 
 %% Make dir low level functions
